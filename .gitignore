@@ -1,0 +1,15 @@
+# byte-compiled e altra roba
+__pycache__/
+*.py[cod]
+*$py.class
+.idea
+
+# environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# mypy
+.mypy_cache/

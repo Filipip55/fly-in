@@ -1,0 +1,1 @@
+Rendi semplice il mostrare graficamnete la capacità delle connection, in tempo reale
