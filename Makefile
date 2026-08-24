@@ -4,14 +4,14 @@ install:
 	uv sync
 
 run:
-	uv run python -m src
+	uv run python -m fly_in $(MAP)
 
 debug:
-	uv run python -m pdb -m src
+	uv run python -m pdb -m fly_in $(MAP)
 
 clean:
-	rm -rf __pycache__ .mypy_cache src/__pycache__ src/llm_sdk/__pycache__ data/output/*
+	rm -rf __pycache__ .mypy_cache fly_in/__pycache__
 
 lint:
-	uv run flake8 .
-	uv run mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+	uv run flake8 fly_in/
+	uv run mypy fly_in/ --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs --strict

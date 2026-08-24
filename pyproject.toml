@@ -1,0 +1,19 @@
+[project]
+name = "fly-in"
+version = "0.1.0"
+description = "Drone pathfinding and simulation engine"
+requires-python = ">=3.10"
+dependencies = ["pygame"]
+
+[dependency-groups]
+dev = ["flake8", "mypy"]
+
+[project.scripts]
+fly-in = "fly_in.__main__:main"
+
+[tool.mypy]
+warn_return_any = true
+warn_unused_ignores = true
+ignore_missing_imports = true
+disallow_untyped_defs = true
+check_untyped_defs = true
