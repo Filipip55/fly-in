@@ -1,4 +1,0 @@
-# comment
-nb_drones: 1 # comment
-start_hub: A 0 0
-end_hub: B 1 1
