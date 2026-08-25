@@ -24,9 +24,16 @@ def main() -> None:
     except FileNotFoundError:
         print(f"\033[91mError: File '{args.map_file}' not found.\033[0m")
         sys.exit(1)
+    except (PermissionError, IsADirectoryError) as e:
+        print(f"\033[91mError: Cannot read '{args.map_file}': {e}\033[0m")
+        sys.exit(1)
 
-    simulator = Simulator(map_obj)
-    snapshots = simulator.record()
+    try:
+        simulator = Simulator(map_obj)
+        snapshots = simulator.record()
+    except RuntimeError as e:
+        print(f"\033[91mSimulation error: {e}\033[0m")
+        sys.exit(1)
 
     visualizer = Visualizer(map_obj, snapshots)
     visualizer.run()

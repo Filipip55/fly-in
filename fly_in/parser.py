@@ -68,6 +68,7 @@ def parse_metadata(metadata_str: str, line_num: int) -> Dict[str, str]:
 
 def _parse_zone(
     map_obj: Map,
+    seen_coords: Set[Tuple[int, int]],
     line_idx: int,
     zone_prefix: str,
     name: str,
@@ -78,12 +79,28 @@ def _parse_zone(
     x = int(x_str)
     y = int(y_str)
 
+    if (x, y) in seen_coords:
+        msg = (f"Line {line_idx+1}: Zone '{name}' has duplicate "
+               f"coordinates ({x}, {y}) — another zone is already "
+               "at this position.")
+        raise ParseError(msg)
+    seen_coords.add((x, y))
+
     zone_type = "normal"
     color = None
     max_drones = 1
 
     if metadata_str is not None:
         metadata = parse_metadata(metadata_str, line_idx + 1)
+
+        valid_keys = {"zone", "color", "max_drones"}
+        unknown = set(metadata.keys()) - valid_keys
+        if unknown:
+            keys = ", ".join(sorted(unknown))
+            msg = (f"Line {line_idx+1}: Unknown zone metadata "
+                   f"key(s): {keys}. Valid keys: "
+                   f"{', '.join(sorted(valid_keys))}.")
+            raise ParseError(msg)
 
         if "zone" in metadata:
             valid_types = ["normal", "blocked", "restricted", "priority"]
@@ -104,7 +121,7 @@ def _parse_zone(
                 max_drones = md
             except ValueError:
                 msg = (f"Line {line_idx+1}: max_drones must be a "
-                    "positive integer greater than 0.")
+                       "positive integer greater than 0.")
                 raise ParseError(msg)
 
     if name in map_obj.zones:
@@ -140,6 +157,10 @@ def _parse_conn(
     z2: str,
     metadata_str: Optional[str]
 ) -> None:
+    if z1 == z2:
+        msg = f"Line {line_idx+1}: Self-connection on zone '{z1}'."
+        raise ParseError(msg)
+
     if z1 not in map_obj.zones:
         msg = f"Line {line_idx+1}: Connection unknown zone '{z1}'."
         raise ParseError(msg)
@@ -156,6 +177,16 @@ def _parse_conn(
     max_link_cap = 1
     if metadata_str is not None:
         metadata = parse_metadata(metadata_str, line_idx + 1)
+
+        valid_keys = {"max_link_capacity"}
+        unknown = set(metadata.keys()) - valid_keys
+        if unknown:
+            keys = ", ".join(sorted(unknown))
+            msg = (f"Line {line_idx+1}: Unknown connection metadata "
+                   f"key(s): {keys}. Valid keys: "
+                   f"{', '.join(sorted(valid_keys))}.")
+            raise ParseError(msg)
+
         if "max_link_capacity" in metadata:
             try:
                 mlc = int(metadata["max_link_capacity"])
@@ -164,7 +195,7 @@ def _parse_conn(
                 max_link_cap = mlc
             except ValueError:
                 msg = (f"Line {line_idx+1}: max_link_capacity must be a "
-                    "positive integer greater than 0.")
+                       "positive integer greater than 0.")
                 raise ParseError(msg)
 
     map_obj.connections.append(Connection(z1, z2, max_link_cap))
@@ -177,6 +208,7 @@ def parse_map(file_path: str) -> Map:
     map_obj: Optional[Map] = None
     nb_drones_found = False
     seen_connections: Set[Tuple[str, str]] = set()
+    seen_coords: Set[Tuple[int, int]] = set()
 
     zone_regex = re.compile(
         r'^(start_hub|end_hub|hub):\s+([^\s\-]+)\s+(-?\d+)\s+(-?\d+)'
@@ -223,6 +255,7 @@ def parse_map(file_path: str) -> Map:
         if zone_match:
             _parse_zone(
                 map_obj,
+                seen_coords,
                 line_idx,
                 zone_match.group(1),
                 zone_match.group(2),
