@@ -4,7 +4,7 @@ install:
 	uv sync
 
 run:
-	uv run python -m fly_in $(MAP)
+	@PYGAME_HIDE_SUPPORT_PROMPT=1 uv run python -m fly_in $(MAP)
 
 debug:
 	uv run python -m pdb -m fly_in $(MAP)
