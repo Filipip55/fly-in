@@ -89,7 +89,7 @@ def _parse_zone(
             valid_types = ["normal", "blocked", "restricted", "priority"]
             if metadata["zone"] not in valid_types:
                 t = metadata["zone"]
-                msg = f"Line {line_idx+1}: Invalid type '{t}'."
+                msg = f"Line {line_idx+1}: Invalid zone type '{t}'."
                 raise ParseError(msg)
             zone_type = metadata["zone"]
 
@@ -103,7 +103,8 @@ def _parse_zone(
                     raise ValueError()
                 max_drones = md
             except ValueError:
-                msg = f"Line {line_idx+1}: max_drones must be > 0."
+                msg = (f"Line {line_idx+1}: max_drones must be a "
+                    "positive integer greater than 0.")
                 raise ParseError(msg)
 
     if name in map_obj.zones:
@@ -162,7 +163,8 @@ def _parse_conn(
                     raise ValueError()
                 max_link_cap = mlc
             except ValueError:
-                msg = f"Line {line_idx+1}: max_link_capacity must be > 0."
+                msg = (f"Line {line_idx+1}: max_link_capacity must be a "
+                    "positive integer greater than 0.")
                 raise ParseError(msg)
 
     map_obj.connections.append(Connection(z1, z2, max_link_cap))
@@ -198,13 +200,19 @@ def parse_map(file_path: str) -> Map:
             if m:
                 nb_drones = int(m.group(1))
                 if nb_drones <= 0:
-                    msg = f"Line {line_idx+1}: nb_drones must be positive."
+                    msg = (
+                        f"Line {line_idx+1}: nb_drones must be a "
+                        "positive integer and greater than 0."
+                    )
                     raise ParseError(msg)
                 map_obj = Map(nb_drones)
                 nb_drones_found = True
                 continue
             else:
-                msg = f"Line {line_idx+1}: First line must be nb_drones."
+                msg = (
+                    f"Line {line_idx+1}: First line must be nb_drones. "
+                    "It must be a positive integer and greater than 0."
+                )
                 raise ParseError(msg)
 
         assert map_obj is not None

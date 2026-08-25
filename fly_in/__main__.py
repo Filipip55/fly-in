@@ -19,10 +19,10 @@ def main() -> None:
     try:
         map_obj = parse_map(args.map_file)
     except ParseError as e:
-        print(f"Parse error: {e}")
+        print(f"\033[91mParse error: {e}\033[0m")
         sys.exit(1)
     except FileNotFoundError:
-        print(f"Error: File '{args.map_file}' not found.")
+        print(f"\033[91mError: File '{args.map_file}' not found.\033[0m")
         sys.exit(1)
 
     simulator = Simulator(map_obj)

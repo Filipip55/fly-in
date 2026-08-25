@@ -1,6 +1,5 @@
 """Visualization engine for fly-in."""
 
-import math
 import sys
 from typing import Dict, List, Tuple
 
@@ -18,12 +17,11 @@ PADDING_Y: int = 100
 
 ZONE_RADIUS: int = 20
 ZONE_OUTLINE_WIDTH: int = 2
-ORBIT_RADIUS: float = 35.0
-ORBIT_SPEED: float = 2.0
 
 FONT_SIZE: int = 18
 HUD_FONT_SIZE: int = 36
 DRONE_FONT_SIZE: int = 28
+COUNT_FONT_SIZE: int = 20
 
 # Colors (Pastel Palette)
 BG_COLOR: Tuple[int, int, int] = (255, 255, 255)
@@ -31,7 +29,8 @@ EDGE_COLOR: Tuple[int, int, int] = (220, 225, 235)
 LABEL_COLOR: Tuple[int, int, int] = (150, 150, 150)
 HUD_COLOR: Tuple[int, int, int] = (120, 120, 120)
 OUTLINE_COLOR: Tuple[int, int, int] = (190, 190, 190)
-DRONE_COLOR: Tuple[int, int, int] = (255, 150, 150)
+DRONE_COLOR: Tuple[int, int, int] = (0, 0, 0)
+COUNT_COLOR: Tuple[int, int, int] = (0, 0, 0)
 DEFAULT_ZONE_COLOR: Tuple[int, int, int] = (210, 230, 210)
 
 PASTEL_COLORS: Dict[str, Tuple[int, int, int]] = {
@@ -58,12 +57,7 @@ class Visualizer:
         map_obj: Map,
         snapshots: List[List[DroneSnapshot]],
     ) -> None:
-        """Initialise the visualizer.
-
-        Args:
-            map_obj: Parsed map with zones and connections.
-            snapshots: Pre-computed list of per-turn drone states.
-        """
+        """Initialise the visualizer."""
         self.map: Map = map_obj
         self.snapshots: List[List[DroneSnapshot]] = snapshots
         self.positions: Dict[str, Tuple[int, int]] = (
@@ -82,14 +76,7 @@ class Visualizer:
     # ── Coordinate mapping ───────────────────────────────────────
 
     def _compute_positions(self) -> Dict[str, Tuple[int, int]]:
-        """Map zone coordinates to pixel positions on the window.
-
-        Auto-fits the graph within the window with padding.
-        Y-axis is flipped so positive Y points upward on screen.
-
-        Returns:
-            Dict mapping zone names to (x, y) pixel tuples.
-        """
+        """Map zone coordinates to pixel positions on the window."""
         zones = self.map.zones
         xs = [z.x for z in zones.values()]
         ys = [z.y for z in zones.values()]
@@ -121,14 +108,7 @@ class Visualizer:
 
     @staticmethod
     def _resolve_color(zone: Zone) -> Tuple[int, int, int]:
-        """Get the display color for a zone.
-
-        Args:
-            zone: The zone to resolve color for.
-
-        Returns:
-            An RGB color tuple.
-        """
+        """Get the display color for a zone."""
         if zone.color:
             color_name = zone.color.lower()
             if color_name in PASTEL_COLORS:
@@ -147,40 +127,8 @@ class Visualizer:
 
     # ── Drone position helpers ───────────────────────────────────
 
-    def _orbit_pos(
-        self,
-        center: Tuple[int, int],
-        elapsed: float,
-        drone_id: int,
-    ) -> Tuple[float, float]:
-        """Compute a circular orbit position around a center.
-
-        Args:
-            center: Pixel center of the orbit.
-            elapsed: Total elapsed time in seconds.
-            drone_id: Used to offset phase so drones don't overlap.
-
-        Returns:
-            Float (x, y) on the orbit circle.
-        """
-        phase = drone_id * (2.0 * math.pi / 8.0)
-        angle = elapsed * ORBIT_SPEED + phase
-        ox = center[0] + ORBIT_RADIUS * math.cos(angle)
-        oy = center[1] + ORBIT_RADIUS * math.sin(angle)
-        return (ox, oy)
-
-    def _midpoint(
-        self, z1: str, z2: str,
-    ) -> Tuple[float, float]:
-        """Return the midpoint between two zone positions.
-
-        Args:
-            z1: First zone name.
-            z2: Second zone name.
-
-        Returns:
-            (x, y) midpoint as floats.
-        """
+    def _midpoint(self, z1: str, z2: str) -> Tuple[float, float]:
+        """Return the midpoint between two zone positions."""
         p1 = self.positions[z1]
         p2 = self.positions[z2]
         return ((p1[0] + p2[0]) / 2.0, (p1[1] + p2[1]) / 2.0)
@@ -190,38 +138,9 @@ class Visualizer:
         prev: DroneSnapshot,
         curr: DroneSnapshot,
         t: float,
-        elapsed: float,
-        playback_idx: int,
     ) -> Tuple[float, float]:
-        """Compute interpolated screen position for a drone.
-
-        Returns float coordinates for smooth sub-pixel movement.
-        Connects linear movement perfectly to the orbital path.
-
-        Args:
-            prev: Drone state at the previous turn.
-            curr: Drone state at the current turn.
-            t: Interpolation factor 0.0 to 1.0 within the turn.
-            elapsed: Total elapsed seconds (for continuous orbit).
-            playback_idx: The integer turn index for orbit transitions.
-
-        Returns:
-            Float (x, y) on the window.
-        """
-        # Determine if the drone stayed in place
-        stayed = (
-            not prev.in_flight
-            and not curr.in_flight
-            and prev.zone is not None
-            and curr.zone is not None
-            and prev.zone == curr.zone
-        )
-        if stayed:
-            assert curr.zone is not None
-            center = self.positions[curr.zone]
-            return self._orbit_pos(center, elapsed, curr.drone_id)
-
-        # Source position (center of the zone)
+        """Compute interpolated screen position for a drone."""
+        # Source position
         if prev.in_flight:
             src = self._midpoint(prev.flight_from, prev.flight_to)
         elif prev.zone is not None:
@@ -231,7 +150,7 @@ class Visualizer:
             p = self.positions[self.map.end_zone or ""]
             src = (float(p[0]), float(p[1]))
 
-        # Destination position (center of the zone)
+        # Destination position
         if curr.in_flight:
             dst = self._midpoint(curr.flight_from, curr.flight_to)
         elif curr.zone is not None:
@@ -247,26 +166,8 @@ class Visualizer:
 
     # ── Drawing primitives ───────────────────────────────────────
 
-    def _draw_drone(
-        self, surface: pygame.Surface, fx: float, fy: float,
-    ) -> None:
-        """Draw a drone character using the pre-rendered surface.
-
-        Args:
-            surface: Display surface.
-            fx: x coordinate (float).
-            fy: y coordinate (float).
-        """
-        x = int(fx) - self.drone_surf.get_width() // 2
-        y = int(fy) - self.drone_surf.get_height() // 2
-        surface.blit(self.drone_surf, (x, y))
-
     def _draw_connections(self, surface: pygame.Surface) -> None:
-        """Draw all connection edges.
-
-        Args:
-            surface: Surface to draw on.
-        """
+        """Draw all connection edges."""
         for conn in self.map.connections:
             p1 = self.positions[conn.zone1]
             p2 = self.positions[conn.zone2]
@@ -277,12 +178,7 @@ class Visualizer:
         surface: pygame.Surface,
         font: pygame.font.Font,
     ) -> None:
-        """Draw zone circles with outlines and labels.
-
-        Args:
-            surface: Surface to draw on.
-            font: Font for zone labels.
-        """
+        """Draw zone circles with outlines and labels."""
         for name, pos in self.positions.items():
             zone = self.map.zones[name]
             color = self._resolve_color(zone)
@@ -296,36 +192,50 @@ class Visualizer:
                 ZONE_RADIUS, ZONE_OUTLINE_WIDTH
             )
 
-            # Label centered below the zone (anti-aliased, grey)
+            # Label centered below the zone
             text_surf = font.render(name, True, LABEL_COLOR)
             tx = pos[0] - text_surf.get_width() // 2
             ty = pos[1] + ZONE_RADIUS + 8
             surface.blit(text_surf, (tx, ty))
 
-    def _draw_drones(
+    def _draw_drones_and_counts(
         self,
         surface: pygame.Surface,
         prev_states: List[DroneSnapshot],
         curr_states: List[DroneSnapshot],
         t: float,
-        elapsed: float,
-        playback_idx: int,
+        count_font: pygame.font.Font,
     ) -> None:
-        """Draw all drones.
+        """Draw moving drones and stationary drone counts on zones."""
+        zone_counts: Dict[str, int] = {name: 0 for name in self.positions}
 
-        Args:
-            surface: Display surface.
-            prev_states: Drone states from the previous snapshot.
-            curr_states: Drone states from the current snapshot.
-            t: Interpolation factor within the current turn.
-            elapsed: Total elapsed seconds.
-            playback_idx: The integer turn index for transition math.
-        """
         for prev, curr in zip(prev_states, curr_states):
-            fx, fy = self._get_drone_pos(
-                prev, curr, t, elapsed, playback_idx
+            stayed = (
+                not prev.in_flight
+                and not curr.in_flight
+                and prev.zone == curr.zone
+                and prev.zone is not None
             )
-            self._draw_drone(surface, fx, fy)
+
+            if stayed:
+                assert curr.zone is not None
+                # Count stationary drones instead of drawing them individually
+                zone_counts[curr.zone] += 1
+            else:
+                # Draw moving drones
+                fx, fy = self._get_drone_pos(prev, curr, t)
+                x = int(fx) - self.drone_surf.get_width() // 2
+                y = int(fy) - self.drone_surf.get_height() // 2
+                surface.blit(self.drone_surf, (x, y))
+
+        # Render drone counts inside the zones
+        for name, count in zone_counts.items():
+            if count > 0:
+                count_surf = count_font.render(str(count), True, COUNT_COLOR)
+                pos = self.positions[name]
+                cx = pos[0] - count_surf.get_width() // 2
+                cy = pos[1] - count_surf.get_height() // 2
+                surface.blit(count_surf, (cx, cy))
 
     def _draw_hud(
         self,
@@ -334,17 +244,10 @@ class Visualizer:
         turn: int,
         completed: bool,
     ) -> None:
-        """Draw the HUD overlay (turn counter / completion).
-
-        Args:
-            surface: Surface to draw on.
-            font: Font for HUD text.
-            turn: Current turn number.
-            completed: Whether the simulation has finished.
-        """
+        """Draw the HUD overlay (turn counter / completion)."""
         if completed:
             total = len(self.snapshots) - 1
-            text = f"Map completed! Total turns: {total}"
+            text = f"Map OK! Total turns: {total}"
         else:
             text = f"Turn {turn}"
 
@@ -359,10 +262,10 @@ class Visualizer:
         screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pygame.display.set_caption("Fly-In")
 
-        # Use a smooth anti-aliased font
         font = pygame.font.SysFont("sans-serif", FONT_SIZE, bold=True)
-        hud_font = pygame.font.SysFont(
-            "sans-serif", HUD_FONT_SIZE, bold=True
+        hud_font = pygame.font.SysFont("sans-serif", HUD_FONT_SIZE, bold=True)
+        count_font = pygame.font.SysFont(
+            "sans-serif", COUNT_FONT_SIZE, bold=True
         )
 
         clock = pygame.time.Clock()
@@ -370,7 +273,6 @@ class Visualizer:
         total_snaps = len(self.snapshots)
         playback_idx = 0
         frame_in_turn = 0
-        total_frames = 0
         completed = False
 
         running = True
@@ -393,11 +295,6 @@ class Visualizer:
 
             t = frame_in_turn / float(FPS)
 
-            # Deterministic elapsed time ensures orbits are smooth
-            # and perfectly synchronized with the playback timeline.
-            total_frames += 1
-            elapsed = total_frames / float(FPS)
-
             # ── Determine interpolation states ───────────────
             if playback_idx == 0:
                 prev_states = self.snapshots[0]
@@ -406,7 +303,6 @@ class Visualizer:
                 prev_states = self.snapshots[playback_idx - 1]
                 curr_states = self.snapshots[playback_idx]
 
-            # For completed state, drones continue to orbit at final pos
             if completed:
                 prev_states = self.snapshots[-1]
                 curr_states = self.snapshots[-1]
@@ -415,8 +311,8 @@ class Visualizer:
             screen.fill(BG_COLOR)
             self._draw_connections(screen)
             self._draw_zones(screen, font)
-            self._draw_drones(
-                screen, prev_states, curr_states, t, elapsed, playback_idx
+            self._draw_drones_and_counts(
+                screen, prev_states, curr_states, t, count_font
             )
             self._draw_hud(screen, hud_font, playback_idx, completed)
 
