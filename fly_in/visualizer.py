@@ -1,5 +1,3 @@
-"""Motore di visualizzazione per fly-in."""
-
 import sys
 from typing import Dict, List, Tuple
 
@@ -8,7 +6,6 @@ import pygame
 from fly_in.parser import Map, Zone
 from fly_in.simulator import DroneSnapshot
 
-# ── Constants ────────────────────────────────────────────────────
 WINDOW_WIDTH: int = 1280
 WINDOW_HEIGHT: int = 720
 FPS: int = 60
@@ -23,7 +20,7 @@ HUD_FONT_SIZE: int = 36
 DRONE_FONT_SIZE: int = 28
 COUNT_FONT_SIZE: int = 20
 
-# Colors (Pastel Palette)
+# pastel palette
 BG_COLOR: Tuple[int, int, int] = (255, 255, 255)
 EDGE_COLOR: Tuple[int, int, int] = (220, 225, 235)
 LABEL_COLOR: Tuple[int, int, int] = (150, 150, 150)
@@ -73,8 +70,6 @@ class Visualizer:
         )
         self.drone_surf = drone_font.render("✇", True, DRONE_COLOR)
 
-    # ── Coordinate mapping ───────────────────────────────────────
-
     def _compute_positions(self) -> Dict[str, Tuple[int, int]]:
         """Mappa le coordinate delle zone in pixel sulla finestra."""
         zones = self.map.zones
@@ -104,8 +99,6 @@ class Visualizer:
             positions[name] = (int(px), int(py))
         return positions
 
-    # ── Color helpers ────────────────────────────────────────────
-
     @staticmethod
     def _resolve_color(zone: Zone) -> Tuple[int, int, int]:
         """Ottiene il colore di visualizzazione per una zona."""
@@ -115,7 +108,6 @@ class Visualizer:
                 return PASTEL_COLORS[color_name]
             try:
                 c = pygame.Color(color_name)
-                # Blend with white to make it pastel if not recognized
                 return (
                     (c.r + 255) // 2,
                     (c.g + 255) // 2,
@@ -124,8 +116,6 @@ class Visualizer:
             except ValueError:
                 pass
         return DEFAULT_ZONE_COLOR
-
-    # ── Drone position helpers ───────────────────────────────────
 
     def _midpoint(self, z1: str, z2: str) -> Tuple[float, float]:
         """Restituisce il punto medio tra le posizioni di due zone."""
@@ -163,8 +153,6 @@ class Visualizer:
         x = src[0] + (dst[0] - src[0]) * t
         y = src[1] + (dst[1] - src[1]) * t
         return (x, y)
-
-    # ── Drawing primitives ───────────────────────────────────────
 
     def _draw_connections(self, surface: pygame.Surface) -> None:
         """Disegna tutti i collegamenti (archi)."""
@@ -254,8 +242,6 @@ class Visualizer:
         text_surf = font.render(text, True, HUD_COLOR)
         surface.blit(text_surf, (20, 20))
 
-    # ── Main loop ────────────────────────────────────────────────
-
     def run(self) -> None:
         """Avvia la finestra pygame e riproduce la simulazione."""
         pygame.init()
@@ -283,7 +269,6 @@ class Visualizer:
                 if event.type == pygame.QUIT:
                     running = False
 
-            # ── Advance playback ─────────────────────────────
             if not completed:
                 frame_in_turn += 1
                 if frame_in_turn >= FPS:
@@ -295,7 +280,6 @@ class Visualizer:
 
             t = frame_in_turn / float(FPS)
 
-            # ── Determine interpolation states ───────────────
             if playback_idx == 0:
                 prev_states = self.snapshots[0]
                 curr_states = self.snapshots[0]
@@ -307,7 +291,6 @@ class Visualizer:
                 prev_states = self.snapshots[-1]
                 curr_states = self.snapshots[-1]
 
-            # ── Render everything directly to the screen ─────
             screen.fill(BG_COLOR)
             self._draw_connections(screen)
             self._draw_zones(screen, font)

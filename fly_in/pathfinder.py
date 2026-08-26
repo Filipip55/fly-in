@@ -129,8 +129,7 @@ class PathFinder:
         return path
 
     def find_paths(self, max_paths: int = 10) -> List[List[str]]:
-        """Trova percorsi multipli più brevi da start a end.
-
+        """
         Individua percorsi alternativi escludendo ciascun nodo
         intermedio del percorso più breve e rieseguendo Dijkstra.
 

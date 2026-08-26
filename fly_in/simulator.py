@@ -1,5 +1,3 @@
-"""Motore di simulazione dei droni turno per turno."""
-
 from typing import (
     Dict, FrozenSet, List, NamedTuple, Optional, Set, Tuple,
 )
@@ -95,7 +93,6 @@ class Simulator:
 
         best_cost = finder.path_cost(paths[0])
 
-        # Keep paths within 2x the best cost
         good_paths = [
             p for p in paths
             if finder.path_cost(p) <= best_cost * 2.0
@@ -103,7 +100,6 @@ class Simulator:
         if not good_paths:
             good_paths = [paths[0]]
 
-        # Assign drones round-robin
         for i in range(self.map.nb_drones):
             path = good_paths[i % len(good_paths)]
             drone = Drone(i + 1, list(path))
@@ -135,7 +131,7 @@ class Simulator:
             if self.turn > self.MAX_TURNS:
                 print(
                     f"ERROR: Exceeded {self.MAX_TURNS} turns, "
-                    f"aborting."
+                    f"it's too much for me!."
                 )
                 break
 
@@ -169,7 +165,7 @@ class Simulator:
             if self.turn > self.MAX_TURNS:
                 print(
                     f"ERROR: Exceeded {self.MAX_TURNS} turns, "
-                    f"aborting."
+                    f"it's too much for me!."
                 )
                 break
 
@@ -210,8 +206,7 @@ class Simulator:
         moves: List[Tuple[Drone, str]] = []
         landed_ids: Set[int] = set()
 
-        # --- Initialize capacity tracking ---
-
+        # capacity tracking for zones and connections
         zone_avail: Dict[str, int] = {}
         for name, zone in self.map.zones.items():
             current = sum(
@@ -230,8 +225,7 @@ class Simulator:
             )
             conn_avail[key] = conn.max_link_capacity - in_flight
 
-        # --- Phase 1: Forced landings ---
-
+        # Fase 1
         for drone in self.drones:
             if not drone.in_flight:
                 continue
@@ -241,12 +235,12 @@ class Simulator:
                 {drone.flight_from, drone.flight_to}
             )
 
-            # Land the drone
+            # atterraggio
             drone.path_index += 1
             drone.in_flight = False
             landed_ids.add(drone.id)
 
-            # Update capacities
+            # Update capacity
             conn_avail[conn_key] += 1
             zone_avail[dest] -= 1
 
@@ -255,7 +249,7 @@ class Simulator:
 
             moves.append((drone, dest))
 
-        # --- Phase 2: Voluntary moves ---
+        # Fase 2
 
         movable = [
             d for d in self.drones
@@ -264,7 +258,7 @@ class Simulator:
             and d.id not in landed_ids
             and d.path_index < len(d.path) - 1
         ]
-        # Drones closer to goal move first
+        # Droni più vicini a end si muovono prima
         movable.sort(key=lambda d: d.steps_remaining)
 
         for drone in movable:
@@ -276,7 +270,6 @@ class Simulator:
             zone_obj = self.map.zones[next_z]
             conn_key = frozenset({curr, next_z})
 
-            # Check connection capacity
             if conn_avail.get(conn_key, 0) <= 0:
                 continue
 
@@ -309,15 +302,14 @@ class Simulator:
             drone: Il drone che tenta di muoversi.
             curr: Nome della zona corrente.
             next_z: Nome della zona di destinazione.
-            conn_key: Chiave del collegamento (frozenset di nomi di zona).
-            zone_avail: Tracciatore disponibilità zone.
-            conn_avail: Tracciatore disponibilità collegamenti.
+            conn_key: Chiave del collegamento (frozenset con nomi di zone).
+            zone_avail: Traccia la disponibilità zone.
+            conn_avail: Traccia la disponibilità collegamenti.
             moves: Lista di movimenti a cui aggiungere il nuovo spostamento.
         """
         if zone_avail.get(next_z, 0) <= 0:
             return
 
-        # Execute move
         zone_avail[curr] += 1
         zone_avail[next_z] -= 1
         conn_avail[conn_key] -= 1
@@ -340,9 +332,9 @@ class Simulator:
     ) -> None:
         """Tenta di avviare un volo di 2 turni verso una zona restricted.
 
-        Il drone entra nel collegamento in questo turno e DEVE arrivare
+        Il drone entra nel collegamento in questo turno e arriva
         al turno successivo. Riserviamo la capacità di destinazione per
-        prevenire situazioni di stallo (deadlock).
+        prevenire situazioni di deadlock.
 
         Args:
             drone: Il drone che tenta di volare.
@@ -353,11 +345,9 @@ class Simulator:
             conn_avail: Tracciatore disponibilità collegamenti.
             moves: Lista di movimenti a cui aggiungere il nuovo spostamento.
         """
-        # Reserve destination capacity for next turn's landing
         if zone_avail.get(next_z, 0) <= 0:
             return
 
-        # Execute flight
         zone_avail[curr] += 1
         zone_avail[next_z] -= 1
         conn_avail[conn_key] -= 1

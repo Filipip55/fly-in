@@ -131,9 +131,8 @@ Simulation complete: 4 turns.
 - Dijkstra's Algorithm - Computerphile: https://www.youtube.com/watch?v=bZkzH5x0SKU&list=WL&index=11&pp=iAQBsAgC
 - Graph Data Structure and Algorithms: https://www.youtube.com/watch?v=t5B064eGMMU&list=WL&index=9&pp=iAQBsAgC
 - Graph Theory Introduction: https://www.youtube.com/watch?v=LFKZLXVO-Dg&pp=ygUMZ3JhcGggdGhlb3J5
-- Python `typing` and `mypy` documentation: https://docs.python.org/3/library/typing.html
 
 ### AI Usage
 Artificial intelligence tools were used during development for:
-1. Drafting regular expressions used in `fly_in/parser.py` to parse map file tokens, coordinates, and optional bracket metadata.
-2. Outlining the initial structure of the Pygame visualizer in `fly_in/visualizer.py` (coordinate transformation math and snapshot interpolation).
+1. Drafting regular expressions used in `fly_in/parser.py` to parse map files, coordinates, and optional metadata.
+2. Outlining the structure of the `fly_in/visualizer.py` script (coordinate transformation math and snapshot interpolation).
