@@ -31,12 +31,11 @@ def main() -> None:
     try:
         simulator = Simulator(map_obj)
         snapshots = simulator.record()
+        visualizer = Visualizer(map_obj, snapshots)
+        visualizer.run()
     except RuntimeError as e:
         print(f"\033[91mSimulation error: {e}\033[0m")
         sys.exit(1)
-
-    visualizer = Visualizer(map_obj, snapshots)
-    visualizer.run()
 
 
 if __name__ == "__main__":

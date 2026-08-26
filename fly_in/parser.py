@@ -131,15 +131,18 @@ def _parse_zone(
     is_end = (zone_prefix == "end_hub")
 
     if is_start:
+        if zone_type == "blocked":
+            msg = f"Line {line_idx+1}: start_hub cannot be blocked."
+            raise ParseError(msg)
         if map_obj.start_zone:
-            msg = f"Line {line_idx+1}: Multiple start_hub zones defined."
+            msg = f"Line {line_idx+1}: Only one start_hub can be defined."
             raise ParseError(msg)
         map_obj.start_zone = name
         max_drones = -1
 
     if is_end:
         if map_obj.end_zone:
-            msg = f"Line {line_idx+1}: Multiple end_hub zones defined."
+            msg = f"Line {line_idx+1}: Only one end_hub can be defined."
             raise ParseError(msg)
         map_obj.end_zone = name
         max_drones = -1
