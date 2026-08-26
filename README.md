@@ -72,12 +72,12 @@ The network is stored as an adjacency list using built-in Python dictionaries:
 ### 2. Pathfinding and Alternative Routes
 1. **Dijkstra's Algorithm**: We use Dijkstra with a min-heap (`heapq`) to compute the lowest-cost path between `start_hub` and `end_hub`.
 2. **Alternative Paths**: To route multiple drones simultaneously without bottlenecks, we discover alternative routes by temporarily excluding each intermediate node from the primary path and re-running Dijkstra.
-3. **Path Assignment**: Discovered paths within twice the best cost are kept. Paths are assigned to drones in round-robin order.
+3. **Path Assignment**: Discovered paths within twice the best cost are kept. Paths are assigned to drones in round-robin order `drone i → path[i % len(paths)]`.
 
 ### 3. Simulation Loop and Conflict Resolution
 Each turn executes in two steps:
-1. **Forced Landings**: Drones currently in flight toward a restricted zone must land first. This frees connection capacity and occupies the destination zone.
-2. **Voluntary Moves**: Remaining drones ready to move are sorted by remaining distance to goal (`steps_remaining`), giving priority to drones closest to the destination.
+1. **Landings**: Drones currently in flight toward a restricted zone must land first. This frees connection capacity and occupies the destination zone.
+2. **Moves**: Remaining drones ready to move are sorted by remaining distance to goal (`steps_remaining`), giving priority to drones closest to the destination.
    - For normal/priority zones: moves occur immediately if both the connection and destination zone have free capacity.
    - For restricted zones: the drone enters the connection (`in_flight = True`), consumes link capacity, and reserves a slot in the destination zone for the next turn.
 
@@ -135,4 +135,4 @@ Simulation complete: 4 turns.
 ### AI Usage
 Artificial intelligence tools were used during development for:
 1. Drafting regular expressions used in `fly_in/parser.py` to parse map files, coordinates, and optional metadata.
-2. Outlining the structure of the `fly_in/visualizer.py` script (coordinate transformation math and snapshot interpolation).
+2. Outlining the structure of the `fly_in/visualizer.py` script.
