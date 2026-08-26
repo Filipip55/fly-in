@@ -8,6 +8,8 @@ from typing import Dict, List, Optional, Set, Tuple
 
 
 class ParseError(Exception):
+    """Exception raised when map parsing fails."""
+
     pass
 
 
@@ -55,14 +57,19 @@ def parse_metadata(metadata_str: str, line_num: int) -> Dict[str, str]:
         return metadata
     tokens = metadata_str.strip().split()
     for token in tokens:
-        if "=" not in token:
+        if token.count("=") != 1:
             msg = f"Line {line_num}: Invalid metadata syntax '{token}'."
             raise ParseError(msg)
         parts = token.split("=", 1)
-        if not parts[0] or not parts[1]:
+        key = parts[0].strip()
+        val = parts[1].strip()
+        if not key or not val:
             msg = f"Line {line_num}: Invalid metadata syntax '{token}'."
             raise ParseError(msg)
-        metadata[parts[0]] = parts[1]
+        if key in metadata:
+            msg = f"Line {line_num}: Duplicate metadata key '{key}'."
+            raise ParseError(msg)
+        metadata[key] = val
     return metadata
 
 
@@ -111,18 +118,20 @@ def _parse_zone(
             zone_type = metadata["zone"]
 
         if "color" in metadata:
-            color = metadata["color"]
+            color_val = metadata["color"]
+            if not color_val.isalpha():
+                msg = (f"Line {line_idx+1}: Invalid color '{color_val}'. "
+                       "Color must be a valid single-word alphabetic string.")
+                raise ParseError(msg)
+            color = color_val
 
         if "max_drones" in metadata:
-            try:
-                md = int(metadata["max_drones"])
-                if md <= 0:
-                    raise ValueError()
-                max_drones = md
-            except ValueError:
+            md_str = metadata["max_drones"]
+            if not re.match(r'^[1-9]\d*$', md_str):
                 msg = (f"Line {line_idx+1}: max_drones must be a "
                        "positive integer greater than 0.")
                 raise ParseError(msg)
+            max_drones = int(md_str)
 
     if name in map_obj.zones:
         raise ParseError(f"Line {line_idx+1}: Duplicate zone name '{name}'.")
@@ -141,6 +150,9 @@ def _parse_zone(
         max_drones = -1
 
     if is_end:
+        if zone_type == "blocked":
+            msg = f"Line {line_idx+1}: end_hub cannot be blocked."
+            raise ParseError(msg)
         if map_obj.end_zone:
             msg = f"Line {line_idx+1}: Only one end_hub can be defined."
             raise ParseError(msg)
@@ -191,15 +203,12 @@ def _parse_conn(
             raise ParseError(msg)
 
         if "max_link_capacity" in metadata:
-            try:
-                mlc = int(metadata["max_link_capacity"])
-                if mlc <= 0:
-                    raise ValueError()
-                max_link_cap = mlc
-            except ValueError:
+            mlc_str = metadata["max_link_capacity"]
+            if not re.match(r'^[1-9]\d*$', mlc_str):
                 msg = (f"Line {line_idx+1}: max_link_capacity must be a "
                        "positive integer greater than 0.")
                 raise ParseError(msg)
+            max_link_cap = int(mlc_str)
 
     map_obj.connections.append(Connection(z1, z2, max_link_cap))
 
@@ -215,10 +224,10 @@ def parse_map(file_path: str) -> Map:
 
     zone_regex = re.compile(
         r'^(start_hub|end_hub|hub):\s+([^\s\-]+)\s+(-?\d+)\s+(-?\d+)'
-        r'(?:\s*\[(.*?)\])?\s*$'
+        r'(?:\s*\[([^\[\]]*)\])?\s*$'
     )
     conn_regex = re.compile(
-        r'^connection:\s+([^\s\-]+)-([^\s\-]+)(?:\s*\[(.*?)\])?\s*$'
+        r'^connection:\s+([^\s\-]+)-([^\s\-]+)(?:\s*\[([^\[\]]*)\])?\s*$'
     )
 
     for line_idx, line in enumerate(lines):
@@ -231,23 +240,23 @@ def parse_map(file_path: str) -> Map:
             continue
 
         if not nb_drones_found:
-            m = re.match(r'^nb_drones:\s*(-?\d+)\s*$', line)
+            m = re.match(r'^nb_drones:\s*([1-9]\d*)\s*$', line)
             if m:
                 nb_drones = int(m.group(1))
-                if nb_drones <= 0:
-                    msg = (
-                        f"Line {line_idx+1}: nb_drones must be a "
-                        "positive integer and greater than 0."
-                    )
-                    raise ParseError(msg)
                 map_obj = Map(nb_drones)
                 nb_drones_found = True
                 continue
             else:
-                msg = (
-                    f"Line {line_idx+1}: First line must be nb_drones. "
-                    "It must be a positive integer and greater than 0."
-                )
+                if line.startswith("nb_drones:"):
+                    msg = (
+                        f"Line {line_idx+1}: nb_drones must be a "
+                        "positive integer and greater than 0."
+                    )
+                else:
+                    msg = (
+                        f"Line {line_idx+1}: First line must be nb_drones. "
+                        "It must be a positive integer and greater than 0."
+                    )
                 raise ParseError(msg)
 
         assert map_obj is not None
