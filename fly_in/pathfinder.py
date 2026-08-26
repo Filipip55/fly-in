@@ -1,5 +1,3 @@
-"""Shortest-path finder using Dijkstra's algorithm."""
-
 import heapq
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -7,23 +5,24 @@ from fly_in.parser import Map, Zone
 
 
 class PathFinder:
-    """Finds shortest paths using Dijkstra's algorithm.
+    """Trova i percorsi più brevi utilizzando l'algoritmo di Dijkstra.
 
-    Edge weights reflect movement cost to the destination zone:
-    - normal: 1.0 turn
-    - priority: 0.9 (preferred, same real cost but favored)
-    - restricted: 2.0 turns
-    - blocked: excluded from the graph
+    I pesi degli archi riflettono il costo di movimento verso la zona
+    di destinazione:
+    - normal: 1.0 turno
+    - priority: 0.9 (preferita, stesso costo reale ma favorita)
+    - restricted: 2.0 turni
+    - blocked: esclusa dal grafo
 
-    Alternative paths are discovered by temporarily excluding
-    intermediate nodes from the shortest path.
+    I percorsi alternativi vengono individuati escludendo temporaneamente
+    i nodi intermedi dal percorso più breve.
     """
 
     def __init__(self, map_obj: Map) -> None:
-        """Initialize the pathfinder with a parsed map.
+        """Inizializza il pathfinder con una mappa analizzata.
 
         Args:
-            map_obj: Parsed map with zones and connections.
+            map_obj: Mappa analizzata con zone e connessioni.
         """
         self.map: Map = map_obj
         self.adj: Dict[str, List[Tuple[str, float]]] = (
@@ -33,10 +32,10 @@ class PathFinder:
     def _build_adjacency(
         self,
     ) -> Dict[str, List[Tuple[str, float]]]:
-        """Build adjacency list from zones and connections.
+        """Costruisce la lista di adiacenza da zone e connessioni.
 
         Returns:
-            Dict mapping zone names to (neighbor, weight) pairs.
+            Dizionario che mappa i nomi delle zone a coppie (vicino, peso).
         """
         adj: Dict[str, List[Tuple[str, float]]] = {
             name: [] for name in self.map.zones
@@ -57,13 +56,13 @@ class PathFinder:
 
     @staticmethod
     def _zone_weight(zone: Zone) -> Optional[float]:
-        """Get the movement weight for entering a zone.
+        """Ottiene il peso di movimento per entrare in una zona.
 
         Args:
-            zone: The destination zone.
+            zone: La zona di destinazione.
 
         Returns:
-            The weight, or None if the zone is blocked.
+            Il peso, oppure None se la zona è bloccata.
         """
         if zone.zone_type == "blocked":
             return None
@@ -79,15 +78,15 @@ class PathFinder:
         end: str,
         excluded: Optional[Set[str]] = None,
     ) -> Optional[List[str]]:
-        """Find the shortest path using Dijkstra's algorithm.
+        """Trova il percorso più breve utilizzando l'algoritmo di Dijkstra.
 
         Args:
-            start: Name of the starting zone.
-            end: Name of the destination zone.
-            excluded: Zone names to exclude from pathfinding.
+            start: Nome della zona di partenza.
+            end: Nome della zona di destinazione.
+            excluded: Nomi delle zone da escludere dalla ricerca.
 
         Returns:
-            List of zone names forming the path, or None.
+            Lista dei nomi delle zone che formano il percorso, oppure None.
         """
         if excluded is None:
             excluded = set()
@@ -130,16 +129,16 @@ class PathFinder:
         return path
 
     def find_paths(self, max_paths: int = 10) -> List[List[str]]:
-        """Find multiple shortest paths from start to end.
+        """Trova percorsi multipli più brevi da start a end.
 
-        Discovers alternative routes by excluding each intermediate
-        node of the shortest path and re-running Dijkstra.
+        Individua percorsi alternativi escludendo ciascun nodo
+        intermedio del percorso più breve e rieseguendo Dijkstra.
 
         Args:
-            max_paths: Maximum number of paths to find.
+            max_paths: Numero massimo di percorsi da trovare.
 
         Returns:
-            List of paths sorted by cost.
+            Lista di percorsi ordinati per costo.
         """
         start = self.map.start_zone
         end = self.map.end_zone
@@ -165,13 +164,13 @@ class PathFinder:
         return paths[:max_paths]
 
     def path_cost(self, path: List[str]) -> float:
-        """Calculate the total weighted cost of a path.
+        """Calcola il costo totale ponderato di un percorso.
 
         Args:
-            path: List of zone names.
+            path: Lista dei nomi delle zone.
 
         Returns:
-            Sum of edge weights along the path.
+            Somma dei pesi degli archi lungo il percorso.
         """
         cost: float = 0.0
         for zone_name in path[1:]:

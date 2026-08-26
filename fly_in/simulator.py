@@ -1,4 +1,4 @@
-"""Turn-by-turn drone simulation engine."""
+"""Motore di simulazione dei droni turno per turno."""
 
 from typing import (
     Dict, FrozenSet, List, NamedTuple, Optional, Set, Tuple,
@@ -10,7 +10,7 @@ from fly_in.pathfinder import PathFinder
 
 
 class DroneSnapshot(NamedTuple):
-    """Immutable snapshot of a single drone's state at a turn."""
+    """Istantanea immutabile dello stato di un singolo drone in un turno."""
 
     drone_id: int
     zone: Optional[str]
@@ -21,26 +21,26 @@ class DroneSnapshot(NamedTuple):
 
 
 class Simulator:
-    """Turn-by-turn drone simulation engine.
+    """Motore di simulazione dei droni turno per turno.
 
-    Manages drone movement through the zone network, enforcing
-    capacity constraints and movement rules at each turn.
+    Gestisce il movimento dei droni attraverso la rete di zone, applicando
+    i vincoli di capacità e le regole di movimento a ogni turno.
 
-    The simulation proceeds in two phases per turn:
-    1. Forced landings: drones in flight MUST arrive at their
-       restricted-zone destination.
-    2. Voluntary moves: remaining drones try to advance along
-       their path, prioritized by proximity to the goal.
+    La simulazione procede in due fasi per turno:
+    1. Atterraggi forzati: i droni in volo DEVONO arrivare alla loro
+       destinazione in zona restricted.
+    2. Movimenti volontari: i droni rimanenti cercano di avanzare lungo
+       il loro percorso, con priorità in base alla vicinanza all'obiettivo.
     """
 
     UNLIMITED_CAPACITY: int = 999999
     MAX_TURNS: int = 10000
 
     def __init__(self, map_obj: Map) -> None:
-        """Initialize the simulator with a parsed map.
+        """Inizializza il simulatore con una mappa analizzata.
 
         Args:
-            map_obj: Parsed map with zones, connections, drone count.
+            map_obj: Mappa analizzata con zone, connessioni, conteggio droni.
         """
         self.map: Map = map_obj
         self.drones: List[Drone] = []
@@ -53,14 +53,14 @@ class Simulator:
             self._conn_map[key] = conn
 
     def _get_connection_name(self, z1: str, z2: str) -> str:
-        """Get the canonical connection name as defined in the map.
+        """Ottiene il nome canonico del collegamento definito nella mappa.
 
         Args:
-            z1: First zone name.
-            z2: Second zone name.
+            z1: Nome della prima zona.
+            z2: Nome della seconda zona.
 
         Returns:
-            Connection name in 'zone1-zone2' format.
+            Nome del collegamento nel formato 'zona1-zona2'.
         """
         key = frozenset({z1, z2})
         conn = self._conn_map.get(key)
@@ -69,23 +69,23 @@ class Simulator:
         return f"{z1}-{z2}"
 
     def _zone_capacity(self, zone: Zone) -> int:
-        """Get the effective capacity of a zone.
+        """Ottiene la capacità effettiva di una zona.
 
         Args:
-            zone: The zone object.
+            zone: L'oggetto zona.
 
         Returns:
-            Maximum drones allowed, or UNLIMITED for start/end.
+            Numero massimo di droni consentiti, o UNLIMITED per start/end.
         """
         if zone.max_drones == -1:
             return self.UNLIMITED_CAPACITY
         return zone.max_drones
 
     def _assign_paths(self) -> None:
-        """Find paths and assign them to drones.
+        """Trova i percorsi e li assegna ai droni.
 
-        Uses round-robin assignment across discovered paths
-        that have similar cost to the shortest path.
+        Utilizza un'assegnazione round-robin tra i percorsi individuati
+        che hanno un costo simile al percorso più breve.
         """
         finder = PathFinder(self.map)
         paths = finder.find_paths()
@@ -113,10 +113,10 @@ class Simulator:
             self.drones.append(drone)
 
     def run(self) -> int:
-        """Run the full simulation.
+        """Esegue la simulazione completa.
 
         Returns:
-            Total number of turns to deliver all drones.
+            Numero totale di turni per consegnare tutti i droni.
         """
         self._assign_paths()
 
@@ -143,10 +143,10 @@ class Simulator:
         return self.turn
 
     def record(self) -> List[List[DroneSnapshot]]:
-        """Pre-compute all turns and return state snapshots.
+        """Precalcola tutti i turni e restituisce le istantanee di stato.
 
         Returns:
-            List of snapshots, index 0 is the initial state.
+            Lista di istantanee, l'indice 0 è lo stato iniziale.
         """
         self._assign_paths()
         snapshots: List[List[DroneSnapshot]] = [
@@ -177,10 +177,10 @@ class Simulator:
         return snapshots
 
     def _capture_snapshot(self) -> List[DroneSnapshot]:
-        """Capture the current state of every drone.
+        """Cattura lo stato corrente di ogni drone.
 
         Returns:
-            List of DroneSnapshot for each drone.
+            Lista di DroneSnapshot per ciascun drone.
         """
         result: List[DroneSnapshot] = []
         for d in self.drones:
@@ -199,13 +199,13 @@ class Simulator:
         return result
 
     def _execute_turn(self) -> List[Tuple[Drone, str]]:
-        """Execute one simulation turn.
+        """Esegue un turno di simulazione.
 
-        Phase 1: Forced landings for in-flight drones.
-        Phase 2: Voluntary moves for grounded drones.
+        Fase 1: Atterraggi forzati per i droni in volo.
+        Fase 2: Movimenti volontari per i droni a terra.
 
         Returns:
-            List of (drone, destination_string) pairs.
+            Lista di coppie (drone, stringa_destinazione).
         """
         moves: List[Tuple[Drone, str]] = []
         landed_ids: Set[int] = set()
@@ -303,16 +303,16 @@ class Simulator:
         conn_avail: Dict[FrozenSet[str], int],
         moves: List[Tuple[Drone, str]],
     ) -> None:
-        """Try to move a drone to a normal or priority zone.
+        """Tenta di spostare un drone in una zona normal o priority.
 
         Args:
-            drone: The drone attempting to move.
-            curr: Current zone name.
-            next_z: Destination zone name.
-            conn_key: Connection key (frozenset of zone names).
-            zone_avail: Mutable zone availability tracker.
-            conn_avail: Mutable connection availability tracker.
-            moves: Mutable list of moves to append to.
+            drone: Il drone che tenta di muoversi.
+            curr: Nome della zona corrente.
+            next_z: Nome della zona di destinazione.
+            conn_key: Chiave del collegamento (frozenset di nomi di zona).
+            zone_avail: Tracciatore disponibilità zone.
+            conn_avail: Tracciatore disponibilità collegamenti.
+            moves: Lista di movimenti a cui aggiungere il nuovo spostamento.
         """
         if zone_avail.get(next_z, 0) <= 0:
             return
@@ -338,20 +338,20 @@ class Simulator:
         conn_avail: Dict[FrozenSet[str], int],
         moves: List[Tuple[Drone, str]],
     ) -> None:
-        """Try to start a 2-turn flight toward a restricted zone.
+        """Tenta di avviare un volo di 2 turni verso una zona restricted.
 
-        The drone enters the connection this turn and MUST arrive
-        next turn. We reserve destination capacity to prevent
-        deadlocks.
+        Il drone entra nel collegamento in questo turno e DEVE arrivare
+        al turno successivo. Riserviamo la capacità di destinazione per
+        prevenire situazioni di stallo (deadlock).
 
         Args:
-            drone: The drone attempting to fly.
-            curr: Current zone name.
-            next_z: Destination restricted zone name.
-            conn_key: Connection key (frozenset of zone names).
-            zone_avail: Mutable zone availability tracker.
-            conn_avail: Mutable connection availability tracker.
-            moves: Mutable list of moves to append to.
+            drone: Il drone che tenta di volare.
+            curr: Nome della zona corrente.
+            next_z: Nome della zona restricted di destinazione.
+            conn_key: Chiave del collegamento (frozenset di nomi di zona).
+            zone_avail: Tracciatore disponibilità zone.
+            conn_avail: Tracciatore disponibilità collegamenti.
+            moves: Lista di movimenti a cui aggiungere il nuovo spostamento.
         """
         # Reserve destination capacity for next turn's landing
         if zone_avail.get(next_z, 0) <= 0:

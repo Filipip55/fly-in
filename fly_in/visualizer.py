@@ -1,4 +1,4 @@
-"""Visualization engine for fly-in."""
+"""Motore di visualizzazione per fly-in."""
 
 import sys
 from typing import Dict, List, Tuple
@@ -47,9 +47,9 @@ PASTEL_COLORS: Dict[str, Tuple[int, int, int]] = {
 
 
 class Visualizer:
-    """Replays pre-computed simulation snapshots in a pygame window.
+    """Riproduce le istantanee della simulazione in una finestra pygame.
 
-    Draws directly to the native resolution with pygame primitives.
+    Disegna direttamente alla risoluzione nativa con primitive pygame.
     """
 
     def __init__(
@@ -57,7 +57,7 @@ class Visualizer:
         map_obj: Map,
         snapshots: List[List[DroneSnapshot]],
     ) -> None:
-        """Initialise the visualizer."""
+        """Inizializza il visualizzatore."""
         self.map: Map = map_obj
         self.snapshots: List[List[DroneSnapshot]] = snapshots
         self.positions: Dict[str, Tuple[int, int]] = (
@@ -76,7 +76,7 @@ class Visualizer:
     # ── Coordinate mapping ───────────────────────────────────────
 
     def _compute_positions(self) -> Dict[str, Tuple[int, int]]:
-        """Map zone coordinates to pixel positions on the window."""
+        """Mappa le coordinate delle zone in pixel sulla finestra."""
         zones = self.map.zones
         xs = [z.x for z in zones.values()]
         ys = [z.y for z in zones.values()]
@@ -108,7 +108,7 @@ class Visualizer:
 
     @staticmethod
     def _resolve_color(zone: Zone) -> Tuple[int, int, int]:
-        """Get the display color for a zone."""
+        """Ottiene il colore di visualizzazione per una zona."""
         if zone.color:
             color_name = zone.color.lower()
             if color_name in PASTEL_COLORS:
@@ -128,7 +128,7 @@ class Visualizer:
     # ── Drone position helpers ───────────────────────────────────
 
     def _midpoint(self, z1: str, z2: str) -> Tuple[float, float]:
-        """Return the midpoint between two zone positions."""
+        """Restituisce il punto medio tra le posizioni di due zone."""
         p1 = self.positions[z1]
         p2 = self.positions[z2]
         return ((p1[0] + p2[0]) / 2.0, (p1[1] + p2[1]) / 2.0)
@@ -139,7 +139,7 @@ class Visualizer:
         curr: DroneSnapshot,
         t: float,
     ) -> Tuple[float, float]:
-        """Compute interpolated screen position for a drone."""
+        """Calcola la posizione su schermo interpolata per un drone."""
         # Source position
         if prev.in_flight:
             src = self._midpoint(prev.flight_from, prev.flight_to)
@@ -167,7 +167,7 @@ class Visualizer:
     # ── Drawing primitives ───────────────────────────────────────
 
     def _draw_connections(self, surface: pygame.Surface) -> None:
-        """Draw all connection edges."""
+        """Disegna tutti i collegamenti (archi)."""
         for conn in self.map.connections:
             p1 = self.positions[conn.zone1]
             p2 = self.positions[conn.zone2]
@@ -178,7 +178,7 @@ class Visualizer:
         surface: pygame.Surface,
         font: pygame.font.Font,
     ) -> None:
-        """Draw zone circles with outlines and labels."""
+        """Disegna i cerchi delle zone con contorni ed etichette."""
         for name, pos in self.positions.items():
             zone = self.map.zones[name]
             color = self._resolve_color(zone)
@@ -206,7 +206,7 @@ class Visualizer:
         t: float,
         count_font: pygame.font.Font,
     ) -> None:
-        """Draw moving drones and stationary drone counts on zones."""
+        """Disegna i droni in movimento e il conteggio di quelli fermi."""
         zone_counts: Dict[str, int] = {name: 0 for name in self.positions}
 
         for prev, curr in zip(prev_states, curr_states):
@@ -244,7 +244,7 @@ class Visualizer:
         turn: int,
         completed: bool,
     ) -> None:
-        """Draw the HUD overlay (turn counter / completion)."""
+        """Disegna l'overlay HUD (contatore dei turni / completamento)."""
         if completed:
             total = len(self.snapshots) - 1
             text = f"Map OK! Total turns: {total}"
@@ -257,7 +257,7 @@ class Visualizer:
     # ── Main loop ────────────────────────────────────────────────
 
     def run(self) -> None:
-        """Launch the pygame window and replay the simulation."""
+        """Avvia la finestra pygame e riproduce la simulazione."""
         pygame.init()
         screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pygame.display.set_caption("Fly-In")

@@ -7,7 +7,7 @@ from fly_in.visualizer import Visualizer
 
 
 def main() -> None:
-    """Parsing di un map file avvia la simulazione."""
+    """Esegue il parsing di un file mappa e avvia la simulazione."""
     try:
         arg_parser = argparse.ArgumentParser(
             description="Fly-in: Drone pathfinding simulation"

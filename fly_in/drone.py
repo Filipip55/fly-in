@@ -1,28 +1,26 @@
-"""Drone entity for the fly-in simulation."""
-
 from typing import List, Optional
 
 
 class Drone:
-    """A drone navigating through the zone network.
+    """Rappresenta un drone.
 
-    Attributes:
-        id: Unique drone identifier (1-indexed).
-        path: Ordered list of zone names from start to end.
-        path_index: Current position index in the path.
-        in_flight: Whether the drone is on a connection
-                   toward a restricted zone.
-        flight_from: Source zone of the current flight.
-        flight_to: Destination zone of the current flight.
-        delivered: Whether the drone has reached the end zone.
+    Attributi:
+        id: ID unico per ogni drone (indice).
+        path: Lista di nomi di zone da start a end.
+        path_index: Posizione corrente nel percorso.
+        in_flight: True se il drone è in volo verso una
+                   zona restricted.
+        flight_from: Zona di partenza per lo spostamento corrente.
+        flight_to: Zona di arrivo per lo spostamento corrente.
+        delivered: True se il drone ha raggiunto end.
     """
 
     def __init__(self, drone_id: int, path: List[str]) -> None:
-        """Initialize a drone with its assigned path.
+        """Inizializza un drone con il percorso assegnato.
 
         Args:
-            drone_id: Unique identifier for the drone.
-            path: List of zone names representing the route.
+            drone_id: ID unico per ogni drone (indice).
+            path: Lista dei nomi delle zone che rappresentano il percorso.
         """
         self.id: int = drone_id
         self.path: List[str] = path
@@ -34,19 +32,19 @@ class Drone:
 
     @property
     def current_zone(self) -> Optional[str]:
-        """Current zone, or None if in flight or delivered."""
+        """Zona corrente, oppure None se in volo o consegnato."""
         if self.in_flight or self.delivered:
             return None
         return self.path[self.path_index]
 
     @property
     def next_zone(self) -> Optional[str]:
-        """Next zone in path, or None if at the end."""
+        """Prossima zona nel percorso, oppure None se alla fine."""
         if self.path_index + 1 >= len(self.path):
             return None
         return self.path[self.path_index + 1]
 
     @property
     def steps_remaining(self) -> int:
-        """Number of steps remaining to reach the end zone."""
+        """Numero di passi rimanenti per raggiungere la zona finale."""
         return len(self.path) - 1 - self.path_index

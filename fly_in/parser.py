@@ -1,6 +1,7 @@
-"""Map file parser for the fly-in simulation.
+"""Parser del file mappa per la simulazione fly-in.
 
-Parses .txt map files that define zones, connections, and drone count.
+Analizza i file di mappa .txt che definiscono zone, connessioni e
+numero di droni.
 """
 
 import re
@@ -8,7 +9,7 @@ from typing import Dict, List, Optional, Set, Tuple
 
 
 class ParseError(Exception):
-    """Exception raised when map parsing fails."""
+    """Eccezione sollevata quando il parsing della mappa fallisce."""
 
     pass
 
@@ -57,19 +58,14 @@ def parse_metadata(metadata_str: str, line_num: int) -> Dict[str, str]:
         return metadata
     tokens = metadata_str.strip().split()
     for token in tokens:
-        if token.count("=") != 1:
+        if "=" not in token:
             msg = f"Line {line_num}: Invalid metadata syntax '{token}'."
             raise ParseError(msg)
         parts = token.split("=", 1)
-        key = parts[0].strip()
-        val = parts[1].strip()
-        if not key or not val:
+        if not parts[0] or not parts[1]:
             msg = f"Line {line_num}: Invalid metadata syntax '{token}'."
             raise ParseError(msg)
-        if key in metadata:
-            msg = f"Line {line_num}: Duplicate metadata key '{key}'."
-            raise ParseError(msg)
-        metadata[key] = val
+        metadata[parts[0]] = parts[1]
     return metadata
 
 
@@ -88,7 +84,7 @@ def _parse_zone(
 
     if (x, y) in seen_coords:
         msg = (f"Line {line_idx+1}: Zone '{name}' has duplicate "
-               f"coordinates ({x}, {y}) — another zone is already "
+               f"coordinates ({x}, {y}). Another zone is already "
                "at this position.")
         raise ParseError(msg)
     seen_coords.add((x, y))
@@ -126,12 +122,15 @@ def _parse_zone(
             color = color_val
 
         if "max_drones" in metadata:
-            md_str = metadata["max_drones"]
-            if not re.match(r'^[1-9]\d*$', md_str):
+            try:
+                md = int(metadata["max_drones"])
+                if md <= 0:
+                    raise ValueError()
+                max_drones = md
+            except ValueError:
                 msg = (f"Line {line_idx+1}: max_drones must be a "
                        "positive integer greater than 0.")
                 raise ParseError(msg)
-            max_drones = int(md_str)
 
     if name in map_obj.zones:
         raise ParseError(f"Line {line_idx+1}: Duplicate zone name '{name}'.")
@@ -187,7 +186,7 @@ def _parse_conn(
     if pair in seen_conns:
         msg = f"Line {line_idx+1}: Duplicate connection '{z1}' and '{z2}'."
         raise ParseError(msg)
-    seen_conns.add((pair[0], pair[1]))  # typed properly for mypy
+    seen_conns.add((pair[0], pair[1]))
 
     max_link_cap = 1
     if metadata_str is not None:
@@ -203,12 +202,15 @@ def _parse_conn(
             raise ParseError(msg)
 
         if "max_link_capacity" in metadata:
-            mlc_str = metadata["max_link_capacity"]
-            if not re.match(r'^[1-9]\d*$', mlc_str):
+            try:
+                mlc = int(metadata["max_link_capacity"])
+                if mlc <= 0:
+                    raise ValueError()
+                max_link_cap = mlc
+            except ValueError:
                 msg = (f"Line {line_idx+1}: max_link_capacity must be a "
                        "positive integer greater than 0.")
                 raise ParseError(msg)
-            max_link_cap = int(mlc_str)
 
     map_obj.connections.append(Connection(z1, z2, max_link_cap))
 
